@@ -33,7 +33,7 @@ export default async function Gastos({ searchParams }: { searchParams: Promise<{
         </div>
       </form>
 
-      <div className="grid" style={{ ['--cols' as string]: 3 }}>
+      <div className="grid" style={{ ['--min' as string]: '160px' }}>
         <Kpi label="Total gastado" value={$(rows.reduce((s, r) => s + Number(r.monto), 0))} className="out" />
         <Kpi label="Compras" value={String(rows.length)} />
         <Kpi label="Insumos distintos" value={String(insumos.length)} />

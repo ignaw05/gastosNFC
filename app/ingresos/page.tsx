@@ -56,7 +56,7 @@ export default async function Ingresos({ searchParams }: { searchParams: Promise
       </form>
 
       <section className="card"><h2>Por producto</h2><Grid head={head} rows={fmt(porProd)} /></section>
-      <div className="grid stack">
+      <div className="grid">
         <section className="card"><h2>Por vendedor</h2><Grid head={head} rows={fmt(porVend)} /></section>
         <section className="card"><h2>Por método de pago</h2><Grid head={head} rows={fmt(porMetodo)} /></section>
       </div>

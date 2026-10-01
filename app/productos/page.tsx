@@ -18,14 +18,14 @@ export default async function Productos() {
   return (
     <>
       <Head eyebrow="Costeo y stock" title="Productos">
-        <form action={save.bind(null, 'productos')} className="fields" style={{ gridTemplateColumns: 'repeat(3, auto)' }}>
+        <form action={save.bind(null, 'productos')} className="inline-form">
           <Sel label="Tipo" name="tipo" opts={p.producto_tipo} />
           <Sel label="Nombre" name="nombre" opts={p.producto_nombre} />
           <button>Crear producto</button>
         </form>
       </Head>
 
-      <div className="grid stack">
+      <div className="grid">
         {prods.map(pr => {
           const precio = Number(pr.vendidas) ? Number(pr.facturado) / Number(pr.vendidas) : 0
           const stock = pr.armadas - Number(pr.vendidas)
@@ -75,7 +75,7 @@ export default async function Productos() {
               <form action={addStock} className="fields">
                 <input type="hidden" name="producto_id" value={pr.id} />
                 <label>Cantidad<input name="cantidad" type="number" min="1" max="1000" defaultValue={1} /></label>
-                <label style={{ gridColumn: 'span 2' }}>Códigos (opcional, uno por línea; reemplaza la cantidad)
+                <label className="full">Códigos (opcional, uno por línea; reemplaza la cantidad)
                   <textarea name="codigos" rows={2} placeholder={'NFC-001\nNFC-002'} /></label>
                 <div className="actions" style={{ justifyContent: 'flex-start' }}>
                   <button className="ghost">+ Sumar stock</button>

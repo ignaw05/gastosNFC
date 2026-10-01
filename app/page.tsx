@@ -37,14 +37,14 @@ export default async function General({ searchParams }: { searchParams: Promise<
         </div>
       </Head>
 
-      <div className="grid" style={{ ['--cols' as string]: 4 }}>
+      <div className="grid" style={{ ['--min' as string]: '160px' }}>
         <Kpi label="Ingresos" value={$(ing)} className="in" sub={`${num(t('u'))} unidades vendidas`} />
         <Kpi label="Gastos" value={$(t('gastos'))} className="out" sub={`comisiones ${$(t('comisiones'))}`} />
         <Kpi label="Ganancia s/ventas" value={$(gan)} sub={ing ? `margen ${Math.round(gan / ing * 100)}%` : undefined} />
         <Kpi label="Caja" value={$(caja)} sub="incluye stock sin vender" dark />
       </div>
 
-      <div className="grid stack">
+      <div className="grid">
         <section className="card">
           <div className="row"><h2>Ganancia por producto</h2><Link href="/productos">Ver productos</Link></div>
           {porProd.map(r => (

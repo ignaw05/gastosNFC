@@ -8,7 +8,7 @@ export default async function Params() {
     <>
       <Head eyebrow="Configuración" title="Parámetros" />
       <p className="muted" style={{ margin: 0 }}>Renombrar un valor actualiza también los gastos, ingresos y productos que lo usan.</p>
-      <div className="grid" style={{ ['--cols' as string]: 3 }}>
+      <div className="grid" style={{ ['--min' as string]: '280px' }}>
         {(Object.keys(KINDS) as Kind[]).map(k => (
           <section key={k} className="card">
             <h2>{KINDS[k]}</h2>
