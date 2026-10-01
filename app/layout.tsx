@@ -1,26 +1,24 @@
-import '@picocss/pico/css/pico.min.css'
-import Link from 'next/link'
+import './globals.css'
+import { Manrope, JetBrains_Mono } from 'next/font/google'
+import { Nav } from './nav'
+
+const sans = Manrope({ subsets: ['latin'], variable: '--font-sans' })
+const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' })
 
 export const metadata = { title: 'Gastos NFC' }
 export const dynamic = 'force-dynamic'
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es">
+    <html lang="es" className={`${sans.variable} ${mono.variable}`}>
       <body>
-        <header className="container">
-          <nav>
-            <ul><li><strong>Gastos NFC</strong></li></ul>
-            <ul>
-              <li><Link href="/">General</Link></li>
-              <li><Link href="/gastos">Gastos</Link></li>
-              <li><Link href="/ingresos">Ingresos</Link></li>
-              <li><Link href="/productos">Productos</Link></li>
-              <li><Link href="/params">Parámetros</Link></li>
-            </ul>
-          </nav>
-        </header>
-        <main className="container">{children}</main>
+        <div className="app">
+          <aside className="side">
+            <div className="brand"><i>N</i>Gastos NFC</div>
+            <Nav />
+          </aside>
+          <main>{children}</main>
+        </div>
       </body>
     </html>
   )

@@ -1,24 +1,32 @@
-import { save } from '@/app/actions'
+import { save, renameParam } from '@/app/actions'
 import { sql, KINDS, type Kind } from '@/lib/db'
-import { Del } from '@/lib/ui'
+import { Head, Del } from '@/lib/ui'
 
 export default async function Params() {
   const rows = await sql<{ id: number; kind: Kind; value: string }[]>`select * from params order by value`
   return (
     <>
-      <h2>Parámetros</h2>
-      <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
+      <Head eyebrow="Configuración" title="Parámetros" />
+      <p className="muted" style={{ margin: 0 }}>Renombrar un valor actualiza también los gastos, ingresos y productos que lo usan.</p>
+      <div className="grid" style={{ ['--cols' as string]: 3 }}>
         {(Object.keys(KINDS) as Kind[]).map(k => (
-          <article key={k}>
-            <header><strong>{KINDS[k]}</strong></header>
+          <section key={k} className="card">
+            <h2>{KINDS[k]}</h2>
             {rows.filter(r => r.kind === k).map(r => (
-              <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between' }}>{r.value}<Del table="params" id={r.id} /></div>
+              <div key={r.id} className="row" style={{ gap: 8 }}>
+                <form action={renameParam.bind(null, r.id)} style={{ display: 'flex', gap: 8, flex: 1, margin: 0 }}>
+                  <input name="value" defaultValue={r.value} required aria-label={`Renombrar ${r.value}`} />
+                  <button className="ghost" aria-label={`Guardar ${r.value}`}>✓</button>
+                </form>
+                <Del table="params" id={r.id} label={`Eliminar ${r.value}`} />
+              </div>
             ))}
-            <form action={save.bind(null, 'params')} style={{ marginTop: '1rem' }}>
+            <form action={save.bind(null, 'params')} style={{ display: 'flex', gap: 8, margin: 0 }}>
               <input type="hidden" name="kind" value={k} />
-              <fieldset role="group"><input name="value" required placeholder="Nuevo…" /><button>+</button></fieldset>
+              <input name="value" required placeholder="Nuevo…" aria-label={`Nuevo valor en ${KINDS[k]}`} />
+              <button aria-label="Agregar">+</button>
             </form>
-          </article>
+          </section>
         ))}
       </div>
     </>

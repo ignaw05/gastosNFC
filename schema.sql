@@ -63,3 +63,13 @@ create or replace view ingresos_ganancia as
          i.monto - i.comision - coalesce(cp.costo, 0) * i.unidades ganancia,
          cp.id is null sin_producto
   from ingresos i left join costo_producto cp on cp.tipo = i.tipo and cp.nombre = i.nombre;
+
+-- stock: cada fila es una unidad armada de un producto; codigo opcional (ej. NFC).
+-- stock disponible = unidades armadas − unidades vendidas (ingresos del mismo tipo+nombre).
+create table if not exists unidades (
+  id serial primary key,
+  producto_id int not null references productos on delete cascade,
+  codigo text unique,
+  fecha date not null default current_date,
+  ingreso_id int references ingresos on delete set null -- venta a la que se asignó este código
+);
