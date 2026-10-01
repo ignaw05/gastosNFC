@@ -29,6 +29,9 @@ create table if not exists ingresos (
   comision numeric not null default 0
 );
 
+alter table gastos add column if not exists pagador text; -- quién puso la plata
+alter table ingresos add column if not exists lugar text; -- a quién/dónde se vendió
+
 create table if not exists productos (
   id serial primary key,
   tipo text not null,
@@ -58,7 +61,8 @@ create or replace view costo_producto as
   left join costo_insumo c on c.tipo = i.gasto_tipo and c.nombre = i.gasto_nombre
   group by p.id;
 
-create or replace view ingresos_ganancia as
+drop view if exists ingresos_ganancia;
+create view ingresos_ganancia as
   select i.*, coalesce(cp.costo, 0) * i.unidades costo,
          i.monto - i.comision - coalesce(cp.costo, 0) * i.unidades ganancia,
          cp.id is null sin_producto

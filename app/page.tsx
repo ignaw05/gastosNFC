@@ -16,9 +16,9 @@ export default async function General({ searchParams }: { searchParams: Promise<
     sql`select * from costo_insumo order by tipo, nombre`,
     sql`
       select * from (
-        select 'in' t, fecha, id, tipo || ' · ' || nombre d, unidades u, metodo_pago || ' · ' || vendedor x, monto from ingresos
+        select 'in' t, fecha, id, tipo || ' · ' || nombre d, unidades u, concat_ws(' · ', lugar, metodo_pago, vendedor) x, monto from ingresos
         union all
-        select 'out', fecha, id, tipo || ' · ' || nombre, unidades, '', monto from gastos
+        select 'out', fecha, id, tipo || ' · ' || nombre, unidades, coalesce('pagó ' || pagador, ''), monto from gastos
       ) m where ${f === 'in' || f === 'out' ? sql`t = ${f}` : sql`true`}
       order by fecha desc, id desc limit 15`,
   ])

@@ -5,10 +5,11 @@ import { Head, Sel, In, Del, Grid, Kpi } from '@/lib/ui'
 
 export default async function Gastos({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
   const { edit } = await searchParams
-  const [p, rows, insumos] = await Promise.all([
+  const [p, rows, insumos, porPagador] = await Promise.all([
     params(),
     sql`select * from gastos order by fecha desc, id desc`,
     sql`select * from costo_insumo order by tipo, nombre`,
+    sql`select coalesce(pagador, '—') k, count(*) n, sum(monto) m from gastos group by 1 order by m desc`,
   ])
   const e = rows.find(r => String(r.id) === edit)
 
@@ -23,6 +24,7 @@ export default async function Gastos({ searchParams }: { searchParams: Promise<{
           <Sel label="Nombre" name="nombre" opts={p.gasto_nombre} value={e?.nombre} />
           <In label="Unidades" name="unidades" type="number" step="any" min="0.0001" defaultValue={e?.unidades} />
           <In label="Monto total" name="monto" type="number" step="0.01" min="0" defaultValue={e?.monto} />
+          <Sel label="Pagó" name="pagador" opts={p.pagador} value={e?.pagador ?? undefined} />
           <In label="Fecha" name="fecha" type="date" defaultValue={e ? fecha(e.fecha) : fecha(new Date())} />
           <div className="actions" style={{ justifyContent: 'flex-start' }}>
             <button>{e ? 'Guardar' : 'Agregar'}</button>
@@ -38,6 +40,11 @@ export default async function Gastos({ searchParams }: { searchParams: Promise<{
       </div>
 
       <section className="card">
+        <h2>Por quién pagó</h2>
+        <Grid head={['Pagó', '#Compras', '$Total']} rows={porPagador.map(r => [<strong key="k">{r.k}</strong>, r.n, $(r.m)])} />
+      </section>
+
+      <section className="card">
         <h2>Costo por insumo</h2>
         <Grid head={['Insumo', '#Unidades', '$Total', '$Costo unit. prom.']}
           rows={insumos.map(r => [<><span className="muted">{r.tipo} · </span><strong>{r.nombre}</strong></>, num(r.unidades), $(r.monto), $(r.costo)])} />
@@ -45,9 +52,9 @@ export default async function Gastos({ searchParams }: { searchParams: Promise<{
 
       <section className="card">
         <h2>Movimientos</h2>
-        <Grid head={['Fecha', 'Insumo', '#Unidades', '$Monto', '$Unitario', '']}
+        <Grid head={['Fecha', 'Insumo', 'Pagó', '#Unidades', '$Monto', '$Unitario', '']}
           rows={rows.map(r => [<span key="f" className="num muted">{fecha(r.fecha)}</span>,
-            <><span className="muted">{r.tipo} · </span><strong>{r.nombre}</strong></>,
+            <><span className="muted">{r.tipo} · </span><strong>{r.nombre}</strong></>, r.pagador ?? '—',
             num(r.unidades), <span key="m" className="out">{$(r.monto)}</span>, $(r.monto_unitario),
             <div key="a" className="actions"><Link href={`/gastos?edit=${r.id}`}>Editar</Link><Del table="gastos" id={r.id} /></div>])} />
       </section>

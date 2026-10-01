@@ -9,7 +9,7 @@ const resumen = (by: string) => sql`
 
 export default async function Ingresos({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
   const { edit } = await searchParams
-  const [p, rows, prods, codigos, porProd, porVend, porMetodo] = await Promise.all([
+  const [p, rows, prods, codigos, porProd, porVend, porMetodo, porLugar, lugares] = await Promise.all([
     params(),
     sql`select * from ingresos_ganancia order by fecha desc, id desc`,
     sql`select tipo, nombre from productos order by tipo, nombre`,
@@ -18,12 +18,14 @@ export default async function Ingresos({ searchParams }: { searchParams: Promise
         from ingresos_ganancia group by 1 order by g desc`,
     resumen('vendedor'),
     resumen('metodo_pago'),
+    resumen('lugar'),
+    sql`select distinct lugar from ingresos where lugar is not null order by 1`,
   ])
   const e = rows.find(r => String(r.id) === edit)
   const cods: Record<string, string> = Object.fromEntries(codigos.map(c => [c.ingreso_id, c.cs]))
   const prodOpts: [string, string][] = prods.map(x => [JSON.stringify([x.tipo, x.nombre]), `${x.tipo} · ${x.nombre}`])
   const head = ['', '#Unidades', '$Monto', '$Comisión', '$Costo', '$Ganancia']
-  const fmt = (rs: typeof porProd) => rs.map(r => [<strong key="k">{r.k}</strong>, num(r.u), $(r.m), $(r.c), $(r.co), <strong key="g">{$(r.g)}</strong>])
+  const fmt = (rs: typeof porProd) => rs.map(r => [<strong key="k">{r.k ?? "—"}</strong>, num(r.u), $(r.m), $(r.c), $(r.co), <strong key="g">{$(r.g)}</strong>])
 
   return (
     <>
@@ -36,6 +38,8 @@ export default async function Ingresos({ searchParams }: { searchParams: Promise
               <Chips label="Producto" name="producto" opts={prodOpts} value={e && JSON.stringify([e.tipo, e.nombre])} />
               <In label="Unidades" name="unidades" type="number" step="any" min="0.0001" defaultValue={e?.unidades ?? 1} />
               <In label="Monto total" name="monto" type="number" step="0.01" min="0" defaultValue={e?.monto} />
+              <In label="Lugar / cliente" name="lugar" list="lugares" defaultValue={e?.lugar ?? ''} placeholder="Ej: Café Central" />
+              <datalist id="lugares">{lugares.map(l => <option key={l.lugar} value={l.lugar} />)}</datalist>
               <In label="Fecha" name="fecha" type="date" defaultValue={e ? fecha(e.fecha) : fecha(new Date())} />
               <Chips label="Método de pago" name="metodo_pago" opts={p.metodo_pago.map(m => [m, m])} value={e?.metodo_pago} />
               <Sel label="Vendedor" name="vendedor" opts={p.vendedor} value={e?.vendedor} />
@@ -56,13 +60,14 @@ export default async function Ingresos({ searchParams }: { searchParams: Promise
         <section className="card"><h2>Por vendedor</h2><Grid head={head} rows={fmt(porVend)} /></section>
         <section className="card"><h2>Por método de pago</h2><Grid head={head} rows={fmt(porMetodo)} /></section>
       </div>
+      <section className="card"><h2>Por lugar</h2><Grid head={head} rows={fmt(porLugar)} /></section>
 
       <section className="card">
         <h2>Movimientos</h2>
-        <Grid head={['Fecha', 'Producto', '#Unid.', '$Monto', 'Pago', 'Vendedor', '$Comisión', '$Costo', '$Ganancia', '']}
+        <Grid head={['Fecha', 'Producto', 'Lugar', '#Unid.', '$Monto', 'Pago', 'Vendedor', '$Comisión', '$Costo', '$Ganancia', '']}
           rows={rows.map(r => [<span key="f" className="num muted">{fecha(r.fecha)}</span>,
             <span key="p"><strong>{r.tipo} · {r.nombre}</strong>{r.sin_producto && <> <span className="tag warn">sin producto</span></>}
-              {cods[r.id] && <div className="tags" style={{ marginTop: 4 }}>{cods[r.id].split(' ').map(c => <span key={c} className="tag">{c}</span>)}</div>}</span>,
+              {cods[r.id] && <div className="tags" style={{ marginTop: 4 }}>{cods[r.id].split(' ').map(c => <span key={c} className="tag">{c}</span>)}</div>}</span>, r.lugar ?? '—',
             num(r.unidades), <span key="m" className="in">{$(r.monto)}</span>, r.metodo_pago, r.vendedor, $(r.comision), $(r.costo), <strong key="g">{$(r.ganancia)}</strong>,
             <div key="a" className="actions"><Link href={`/ingresos?edit=${r.id}`}>Editar</Link><Del table="ingresos" id={r.id} /></div>])} />
       </section>

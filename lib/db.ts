@@ -9,6 +9,7 @@ export const KINDS = {
   producto_nombre: 'Nombres de producto',
   metodo_pago: 'Métodos de pago',
   vendedor: 'Vendedores',
+  pagador: 'Quién paga (gastos)',
 } as const
 export type Kind = keyof typeof KINDS
 

@@ -4,8 +4,8 @@ import { redirect } from 'next/navigation'
 import { sql, type Kind } from '@/lib/db'
 
 const COLS = {
-  gastos: ['tipo', 'nombre', 'unidades', 'fecha', 'monto'],
-  ingresos: ['tipo', 'nombre', 'unidades', 'monto', 'fecha', 'metodo_pago', 'vendedor', 'comision'],
+  gastos: ['tipo', 'nombre', 'unidades', 'fecha', 'monto', 'pagador'],
+  ingresos: ['tipo', 'nombre', 'unidades', 'monto', 'fecha', 'metodo_pago', 'vendedor', 'comision', 'lugar'],
   productos: ['tipo', 'nombre'],
   producto_items: ['producto_id', 'gasto_tipo', 'gasto_nombre', 'cantidad'],
   params: ['kind', 'value'],
@@ -70,6 +70,7 @@ const USES: Record<Kind, [string, string][]> = {
   producto_nombre: [['productos', 'nombre'], ['ingresos', 'nombre']],
   metodo_pago: [['ingresos', 'metodo_pago']],
   vendedor: [['ingresos', 'vendedor']],
+  pagador: [['gastos', 'pagador']],
 }
 
 export async function renameParam(id: number, fd: FormData) {
