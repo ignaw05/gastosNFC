@@ -1,6 +1,6 @@
 import postgres from 'postgres'
 
-export const sql = postgres((process.env.DATABASE_URL ?? process.env.DATABASE_URL_DATABASE_URL)!, { max: 1 })
+export const sql = postgres((process.env.DATABASE_URL ?? process.env.DATABASE_URL_DATABASE_URL)!, { max: 1, prepare: false }) // sin prepared statements: el pooler de Neon los cachea y rompen al cambiar el schema
 
 export const KINDS = {
   gasto_tipo: 'Tipos de gasto',
