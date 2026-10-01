@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/init-db.mjs && next build",
     "start": "next start",
     "db:init": "node --env-file=.env.local scripts/init-db.mjs",
     "test": "node --env-file=.env.local scripts/check.mjs"

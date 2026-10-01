@@ -3,7 +3,7 @@ import postgres from 'postgres'
 import { readFileSync } from 'node:fs'
 import assert from 'node:assert'
 
-const sql = postgres(process.env.DATABASE_URL, { max: 1, onnotice: () => {} })
+const sql = postgres(process.env.DATABASE_URL ?? process.env.DATABASE_URL_DATABASE_URL, { max: 1, onnotice: () => {} })
 await sql`drop schema if exists check_tmp cascade`
 await sql`create schema check_tmp`
 await sql`set search_path to check_tmp`
