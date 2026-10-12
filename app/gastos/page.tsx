@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { save } from '@/app/actions'
 import { sql, params, $, num, fecha } from '@/lib/db'
-import { Head, Sel, In, Del, Grid, Kpi } from '@/lib/ui'
+import { Head, Sel, In, Del, Grid, Kpi, Chips } from '@/lib/ui'
 
 export default async function Gastos({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
   const { edit } = await searchParams
@@ -25,7 +25,7 @@ export default async function Gastos({ searchParams }: { searchParams: Promise<{
           <In label="Unidades" name="unidades" type="number" step="any" min="0.0001" defaultValue={e?.unidades} />
           <In label="Monto total" name="monto" type="number" step="0.01" min="0" defaultValue={e?.monto} />
           <Sel label="Pagó" name="pagador" opts={p.pagador} value={e?.pagador ?? undefined} />
-          <Sel label="Salió de" name="medio" opts={p.metodo_pago} value={e?.medio ?? undefined} />
+          <Chips label="Salió de" name="medio" opts={[['', 'Su bolsillo (la caja se lo debe)'], ...p.metodo_pago.map(m => [m, m] as [string, string])]} value={e?.medio ?? ''} />
           <In label="Fecha" name="fecha" type="date" defaultValue={e ? fecha(e.fecha) : fecha(new Date())} />
           <div className="actions" style={{ justifyContent: 'flex-start' }}>
             <button>{e ? 'Guardar' : 'Agregar'}</button>
@@ -55,7 +55,7 @@ export default async function Gastos({ searchParams }: { searchParams: Promise<{
         <h2>Movimientos</h2>
         <Grid head={['Fecha', 'Insumo', 'Pagó', 'Medio', '#Unidades', '$Monto', '$Unitario', '']}
           rows={rows.map(r => [<span key="f" className="num muted">{fecha(r.fecha)}</span>,
-            <><span className="muted">{r.tipo} · </span><strong>{r.nombre}</strong></>, r.pagador ?? '—', r.medio ?? <span key="s" className="tag warn">sin medio</span>,
+            <><span className="muted">{r.tipo} · </span><strong>{r.nombre}</strong></>, r.pagador ?? '—', r.medio ?? <span key="s" className="muted">su bolsillo</span>,
             num(r.unidades), <span key="m" className="out">{$(r.monto)}</span>, $(r.monto_unitario),
             <div key="a" className="actions"><Link href={`/gastos?edit=${r.id}`}>Editar</Link><Del table="gastos" id={r.id} /></div>])} />
       </section>

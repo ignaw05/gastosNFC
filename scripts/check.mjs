@@ -27,11 +27,12 @@ assert.equal(Number(pr.costo).toFixed(4), (100 / 30 + 2 * 32 / 30).toFixed(4))
 const [ing] = await sql`select costo, ganancia from ingresos_ganancia`
 assert.equal(Number(ing.ganancia).toFixed(2), (50 - 5 - 3 * Number(pr.costo)).toFixed(2))
 
-// caja: venta 50 en Efectivo − comisión 5; gastos sin medio (−232); transferir 20 a MP; retiro 10 de MP
+// caja: venta 50 en Efectivo − comisión 5; gastos sin medio = de bolsillo (no tocan caja); transferir 20 a MP; retiro 10 de MP; devolver 5 de Efectivo
 await sql`insert into caja (tipo, fecha, desde, hacia, monto) values ('transferencia', now(), 'Efectivo', 'MP', 20)`
 await sql`insert into caja (tipo, fecha, desde, monto, persona) values ('retiro', now(), 'MP', 10, 'Socio')`
+await sql`insert into caja (tipo, fecha, desde, monto, persona) values ('reintegro', now(), 'Efectivo', 5, 'Socio')`
 const saldo = Object.fromEntries((await sql`select medio, sum(monto) s from caja_mov group by 1`).map(r => [r.medio, Number(r.s)]))
-assert.deepEqual(saldo, { Efectivo: 25, MP: 10, 'Sin medio': -132 })
+assert.deepEqual(saldo, { Efectivo: 20, MP: 10 })
 await assert.rejects(sql`insert into caja (tipo, fecha, desde, monto) values ('retiro', now(), 'MP', 10)`) // retiro sin persona
 
 await sql`drop schema check_tmp cascade`
