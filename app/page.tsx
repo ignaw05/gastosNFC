@@ -4,7 +4,7 @@ import { Head, Grid, Kpi } from '@/lib/ui'
 
 export default async function General({ searchParams }: { searchParams: Promise<{ f?: string }> }) {
   const { f } = await searchParams
-  const [meses, porProd, insumos, movs] = await Promise.all([
+  const [meses, porProd, insumos, movs, [enCaja]] = await Promise.all([
     sql`
       with g as (select to_char(fecha, 'YYYY-MM') mes, sum(monto) gastos from gastos group by 1),
            i as (select to_char(fecha, 'YYYY-MM') mes, sum(monto) ingresos, sum(comision) comisiones, sum(ganancia) ganancia, sum(unidades) u
@@ -21,9 +21,10 @@ export default async function General({ searchParams }: { searchParams: Promise<
         select 'out', fecha, id, tipo || ' · ' || nombre, unidades, coalesce('pagó ' || pagador, ''), monto from gastos
       ) m where ${f === 'in' || f === 'out' ? sql`t = ${f}` : sql`true`}
       order by fecha desc, id desc limit 15`,
+    sql`select coalesce(sum(monto), 0) s from caja_mov`,
   ])
   const t = (k: string) => meses.reduce((s, r) => s + Number(r[k]), 0)
-  const ing = t('ingresos'), gan = t('ganancia'), caja = t('caja')
+  const ing = t('ingresos'), gan = t('ganancia')
   const max = Math.max(...porProd.map(r => Number(r.g)), 1)
   const tab = (v: string | undefined, l: string) =>
     <Link href={v ? `/?f=${v}` : '/'} aria-current={f === v ? 'page' : undefined} scroll={false}>{l}</Link>
@@ -41,7 +42,7 @@ export default async function General({ searchParams }: { searchParams: Promise<
         <Kpi label="Ingresos" value={$(ing)} className="in" sub={`${num(t('u'))} unidades vendidas`} />
         <Kpi label="Gastos" value={$(t('gastos'))} className="out" sub={`comisiones ${$(t('comisiones'))}`} />
         <Kpi label="Ganancia s/ventas" value={$(gan)} sub={ing ? `margen ${Math.round(gan / ing * 100)}%` : undefined} />
-        <Kpi label="Caja" value={$(caja)} sub="incluye stock sin vender" dark />
+        <Link href="/caja" style={{ display: 'contents', color: 'inherit' }}><Kpi label="En caja" value={$(enCaja.s)} sub="ver caja y retiros →" dark /></Link>
       </div>
 
       <div className="grid">
@@ -72,7 +73,7 @@ export default async function General({ searchParams }: { searchParams: Promise<
 
       <section className="card">
         <h2>Por mes</h2>
-        <Grid head={['Mes', '$Ingresos', '$Comisiones', '$Gastos', '$Ganancia s/ventas', '$Caja']}
+        <Grid head={['Mes', '$Ingresos', '$Comisiones', '$Gastos', '$Ganancia s/ventas', '$Flujo operativo']}
           rows={meses.map(r => [<strong key="m">{r.mes}</strong>, $(r.ingresos), $(r.comisiones), $(r.gastos), $(r.ganancia), $(r.caja)])} />
       </section>
     </>

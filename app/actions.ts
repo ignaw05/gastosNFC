@@ -4,12 +4,13 @@ import { redirect } from 'next/navigation'
 import { sql, type Kind } from '@/lib/db'
 
 const COLS = {
-  gastos: ['tipo', 'nombre', 'unidades', 'fecha', 'monto', 'pagador'],
+  gastos: ['tipo', 'nombre', 'unidades', 'fecha', 'monto', 'pagador', 'medio'],
   ingresos: ['tipo', 'nombre', 'unidades', 'monto', 'fecha', 'metodo_pago', 'vendedor', 'comision', 'lugar'],
   productos: ['tipo', 'nombre'],
   producto_items: ['producto_id', 'gasto_tipo', 'gasto_nombre', 'cantidad'],
   params: ['kind', 'value'],
   unidades: ['producto_id', 'codigo'],
+  caja: ['tipo', 'fecha', 'desde', 'hacia', 'monto', 'persona', 'nota'],
 } as const
 export type Table = keyof typeof COLS
 
@@ -27,7 +28,7 @@ export async function save(table: Table, fd: FormData) {
     const [t, n] = JSON.parse(String(fd.get('producto')))
     fd.set('tipo', t); fd.set('nombre', n)
   }
-  const row = Object.fromEntries(COLS[table].map(c => [c, String(fd.get(c) ?? '').trim()]))
+  const row = Object.fromEntries(COLS[table].map(c => [c, String(fd.get(c) ?? '').trim() || null]))
   const id = fd.get('id')
   const [r] = id
     ? await sql`update ${sql(table)} set ${sql(row)} where id = ${String(id)} returning id`
@@ -68,9 +69,9 @@ const USES: Record<Kind, [string, string][]> = {
   gasto_nombre: [['gastos', 'nombre'], ['producto_items', 'gasto_nombre']],
   producto_tipo: [['productos', 'tipo'], ['ingresos', 'tipo']],
   producto_nombre: [['productos', 'nombre'], ['ingresos', 'nombre']],
-  metodo_pago: [['ingresos', 'metodo_pago']],
+  metodo_pago: [['ingresos', 'metodo_pago'], ['gastos', 'medio'], ['caja', 'desde'], ['caja', 'hacia']],
   vendedor: [['ingresos', 'vendedor']],
-  pagador: [['gastos', 'pagador']],
+  pagador: [['gastos', 'pagador'], ['caja', 'persona']],
 }
 
 export async function renameParam(id: number, fd: FormData) {

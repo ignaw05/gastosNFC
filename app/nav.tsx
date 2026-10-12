@@ -6,6 +6,7 @@ const LINKS: [string, string, string][] = [
   ['/', 'General', 'M3 3h7v9H3zM14 3h7v5h-7zM14 12h7v9h-7zM3 16h7v5H3z'],
   ['/gastos', 'Gastos', 'M12 5v14M19 12l-7 7-7-7'],
   ['/ingresos', 'Ingresos', 'M12 19V5M5 12l7-7 7 7'],
+  ['/caja', 'Caja', 'M3 7h18v13H3zM3 7l3-4h12l3 4M16 13h2'],
   ['/productos', 'Productos', 'M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8'],
   ['/params', 'Parámetros', 'M4 6h16M4 12h10M4 18h6'],
 ]

@@ -25,6 +25,7 @@ export default async function Gastos({ searchParams }: { searchParams: Promise<{
           <In label="Unidades" name="unidades" type="number" step="any" min="0.0001" defaultValue={e?.unidades} />
           <In label="Monto total" name="monto" type="number" step="0.01" min="0" defaultValue={e?.monto} />
           <Sel label="Pagó" name="pagador" opts={p.pagador} value={e?.pagador ?? undefined} />
+          <Sel label="Salió de" name="medio" opts={p.metodo_pago} value={e?.medio ?? undefined} />
           <In label="Fecha" name="fecha" type="date" defaultValue={e ? fecha(e.fecha) : fecha(new Date())} />
           <div className="actions" style={{ justifyContent: 'flex-start' }}>
             <button>{e ? 'Guardar' : 'Agregar'}</button>
@@ -52,9 +53,9 @@ export default async function Gastos({ searchParams }: { searchParams: Promise<{
 
       <section className="card">
         <h2>Movimientos</h2>
-        <Grid head={['Fecha', 'Insumo', 'Pagó', '#Unidades', '$Monto', '$Unitario', '']}
+        <Grid head={['Fecha', 'Insumo', 'Pagó', 'Medio', '#Unidades', '$Monto', '$Unitario', '']}
           rows={rows.map(r => [<span key="f" className="num muted">{fecha(r.fecha)}</span>,
-            <><span className="muted">{r.tipo} · </span><strong>{r.nombre}</strong></>, r.pagador ?? '—',
+            <><span className="muted">{r.tipo} · </span><strong>{r.nombre}</strong></>, r.pagador ?? '—', r.medio ?? <span key="s" className="tag warn">sin medio</span>,
             num(r.unidades), <span key="m" className="out">{$(r.monto)}</span>, $(r.monto_unitario),
             <div key="a" className="actions"><Link href={`/gastos?edit=${r.id}`}>Editar</Link><Del table="gastos" id={r.id} /></div>])} />
       </section>

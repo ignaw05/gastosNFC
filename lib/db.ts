@@ -7,9 +7,9 @@ export const KINDS = {
   gasto_nombre: 'Nombres de gasto',
   producto_tipo: 'Tipos de producto',
   producto_nombre: 'Nombres de producto',
-  metodo_pago: 'Métodos de pago',
+  metodo_pago: 'Medios de pago (caja)',
   vendedor: 'Vendedores',
-  pagador: 'Quién paga (gastos)',
+  pagador: 'Socios (pagan gastos / retiran)',
 } as const
 export type Kind = keyof typeof KINDS
 

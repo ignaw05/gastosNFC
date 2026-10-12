@@ -77,3 +77,30 @@ create table if not exists unidades (
   fecha date not null default current_date,
   ingreso_id int references ingresos on delete set null -- venta a la que se asignó este código
 );
+
+-- CAJA: de qué medio de pago (params metodo_pago) salió cada gasto
+alter table gastos add column if not exists medio text; -- null = gasto viejo sin asignar ("Sin medio")
+
+-- movimientos de plata que no son compra/venta
+create table if not exists caja (
+  id serial primary key,
+  fecha date not null,
+  tipo text not null,
+  desde text, -- medio de donde sale
+  hacia text, -- medio adonde entra
+  monto numeric not null check (monto > 0),
+  persona text, -- socio que retira / aporta
+  nota text,
+  check (
+    (tipo = 'transferencia' and desde is not null and hacia is not null and desde <> hacia) or
+    (tipo = 'retiro' and desde is not null and hacia is null and persona is not null) or
+    (tipo = 'aporte' and hacia is not null and desde is null and persona is not null))
+);
+
+-- libro mayor: cada fila mueve `monto` (con signo) en un medio. saldo de un medio = sum(monto).
+create or replace view caja_mov as
+  select fecha, 'ingreso' origen, id, metodo_pago medio, monto, tipo || ' · ' || nombre || coalesce(' · ' || lugar, '') detalle from ingresos
+  union all select fecha, 'comision', id, metodo_pago, -comision, 'Comisión ' || vendedor from ingresos where comision > 0
+  union all select fecha, 'gasto', id, coalesce(medio, 'Sin medio'), -monto, tipo || ' · ' || nombre || coalesce(' · pagó ' || pagador, '') from gastos
+  union all select fecha, tipo, id, desde, -monto, concat_ws(' · ', '→ ' || hacia, persona, nota) from caja where desde is not null
+  union all select fecha, tipo, id, hacia, monto, concat_ws(' · ', '← ' || desde, persona, nota) from caja where hacia is not null;
