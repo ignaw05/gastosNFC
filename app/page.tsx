@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { sql, $, num, fecha } from '@/lib/db'
-import { Head, Grid, Kpi } from '@/lib/ui'
+import { Head, Grid, Kpi, ICON } from '@/lib/ui'
+import { Spark, Bars, Donut } from '@/lib/charts'
 
 export default async function General({ searchParams }: { searchParams: Promise<{ f?: string }> }) {
   const { f } = await searchParams
@@ -25,7 +26,11 @@ export default async function General({ searchParams }: { searchParams: Promise<
   ])
   const t = (k: string) => meses.reduce((s, r) => s + Number(r[k]), 0)
   const ing = t('ingresos'), gan = t('ganancia')
-  const max = Math.max(...porProd.map(r => Number(r.g)), 1)
+  // series mensuales en orden cronológico para los gráficos
+  const serie = meses.toReversed().map(r => ({ mes: r.mes as string, ingresos: Number(r.ingresos), gastos: Number(r.gastos), ganancia: Number(r.ganancia), caja: Number(r.caja) }))
+  let acc = 0
+  const acumulado = serie.map(r => ({ k: r.mes, v: acc += r.caja }))
+  const sp = (k: 'ingresos' | 'gastos' | 'ganancia' | 'caja') => serie.map(r => ({ k: r.mes, v: r[k] }))
   const tab = (v: string | undefined, l: string) =>
     <Link href={v ? `/?f=${v}` : '/'} aria-current={f === v ? 'page' : undefined} scroll={false}>{l}</Link>
 
@@ -38,27 +43,23 @@ export default async function General({ searchParams }: { searchParams: Promise<
         </div>
       </Head>
 
-      <div className="grid" style={{ ['--min' as string]: '160px' }}>
-        <Kpi label="Ingresos" value={$(ing)} className="in" sub={`${num(t('u'))} unidades vendidas`} />
-        <Kpi label="Gastos" value={$(t('gastos'))} className="out" sub={`comisiones ${$(t('comisiones'))}`} />
-        <Kpi label="Ganancia s/ventas" value={$(gan)} sub={ing ? `margen ${Math.round(gan / ing * 100)}%` : undefined} />
-        <Link href="/caja" style={{ display: 'contents', color: 'inherit' }}><Kpi label="En caja" value={$(enCaja.s)} sub="ver caja y retiros →" dark /></Link>
+      <div className="grid" style={{ ['--min' as string]: '220px' }}>
+        <Kpi label="Ingresos" value={$(ing)} icon={ICON.in} sub={`${num(t('u'))} unidades vendidas`}><Spark id="s-in" data={sp('ingresos')} /></Kpi>
+        <Kpi label="Gastos" value={$(t('gastos'))} icon={ICON.out} sub={`comisiones ${$(t('comisiones'))}`}><Spark id="s-out" data={sp('gastos')} color="var(--c3)" /></Kpi>
+        <Kpi label="Ganancia s/ventas" value={$(gan)} icon={ICON.trend} sub={ing ? `margen ${Math.round(gan / ing * 100)}%` : undefined}><Spark id="s-gan" data={sp('ganancia')} color="var(--c4)" /></Kpi>
+        <Link href="/caja" style={{ display: 'contents', color: 'inherit' }}><Kpi label="En caja" value={$(enCaja.s)} icon={ICON.wallet} sub="ver caja y retiros →" dark><Spark id="s-caja" data={acumulado} color="#fff" /></Kpi></Link>
       </div>
 
-      <div className="grid">
+      <div className="grid wide">
         <section className="card">
-          <div className="row"><h2>Ganancia por producto</h2><Link href="/productos">Ver productos</Link></div>
-          {porProd.map(r => (
-            <div key={r.k}>
-              <div className="row"><strong>{r.k}</strong><span className="num">{$(r.g)}</span></div>
-              <div className="bar"><div style={{ width: `${Math.max(0, Number(r.g)) / max * 100}%` }} /></div>
-            </div>
-          ))}
-          {!porProd.length && <p className="muted">Todavía no hay ventas.</p>}
+          <div className="row"><h2>Ingresos vs gastos por mes</h2>
+            <div className="legend-row"><span><i style={{ background: 'var(--c1)' }} />Ingresos</span><span><i style={{ background: 'var(--c2)' }} />Gastos</span><span><i style={{ background: 'var(--c4)' }} />Ganancia</span></div>
+          </div>
+          {serie.length ? <Bars data={serie} x="mes" bars={[['ingresos', 'Ingresos'], ['gastos', 'Gastos']]} line={['ganancia', 'Ganancia']} /> : <p className="muted">Todavía no hay movimientos.</p>}
         </section>
         <section className="card">
-          <h2>Costo por insumo</h2>
-          <Grid head={['Insumo', '#Unidades', '$Costo unit.']} rows={insumos.map(r => [<strong key="n">{r.nombre}</strong>, num(r.unidades), $(r.costo)])} />
+          <div className="row"><h2>Ganancia por producto</h2><Link href="/productos">Ver productos</Link></div>
+          {porProd.length ? <Donut data={porProd.map(r => ({ k: r.k, v: Number(r.g) }))} center={$(gan)} label="ganancia" /> : <p className="muted">Todavía no hay ventas.</p>}
         </section>
       </div>
 
@@ -71,11 +72,17 @@ export default async function General({ searchParams }: { searchParams: Promise<
             <strong key="m" className={m.t}>{m.t === 'in' ? '+ ' : '− '}{$(m.monto)}</strong>])} />
       </section>
 
-      <section className="card">
-        <h2>Por mes</h2>
-        <Grid head={['Mes', '$Ingresos', '$Comisiones', '$Gastos', '$Ganancia s/ventas', '$Flujo operativo']}
-          rows={meses.map(r => [<strong key="m">{r.mes}</strong>, $(r.ingresos), $(r.comisiones), $(r.gastos), $(r.ganancia), $(r.caja)])} />
-      </section>
+      <div className="grid">
+        <section className="card">
+          <h2>Costo por insumo</h2>
+          <Grid head={['Insumo', '#Unidades', '$Costo unit.']} rows={insumos.map(r => [<strong key="n">{r.nombre}</strong>, num(r.unidades), $(r.costo)])} />
+        </section>
+        <section className="card">
+          <h2>Por mes</h2>
+          <Grid head={['Mes', '$Ingresos', '$Comisiones', '$Gastos', '$Ganancia s/ventas', '$Flujo operativo']}
+            rows={meses.map(r => [<strong key="m">{r.mes}</strong>, $(r.ingresos), $(r.comisiones), $(r.gastos), $(r.ganancia), $(r.caja)])} />
+        </section>
+      </div>
     </>
   )
 }

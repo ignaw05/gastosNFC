@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { save } from '@/app/actions'
 import { sql, params, $, fecha } from '@/lib/db'
-import { Head, Sel, In, Del, Grid, Kpi } from '@/lib/ui'
+import { Head, Sel, In, Del, Grid, Kpi, ICON } from '@/lib/ui'
+import { Donut, Trend } from '@/lib/charts'
 
 const ORIGEN: Record<string, string> = { ingreso: 'Venta', comision: 'Comisión', gasto: 'Gasto', transferencia: 'Transferencia', retiro: 'Retiro', aporte: 'Aporte' }
 
@@ -22,6 +23,10 @@ export default async function Caja({ searchParams }: { searchParams: Promise<{ m
   // medios configurados sin movimientos también aparecen, en $0
   const medios = [...saldos, ...p.metodo_pago.filter(x => !saldos.some(r => r.medio === x)).map(medio => ({ medio, s: 0 }))]
   const hoy = fecha(new Date())
+  // saldo al cierre de cada día (movs viene de más nuevo a más viejo)
+  const porDia = new Map<string, number>()
+  for (const r of movs) if (!porDia.has(fecha(r.fecha))) porDia.set(fecha(r.fecha), Number(r.saldo))
+  const evolucion = [...porDia].reverse().map(([k, v]) => ({ k, v }))
   const tab = (v: string | undefined, l: string) =>
     <Link key={l} href={v ? `/caja?m=${encodeURIComponent(v)}` : '/caja'} aria-current={m === v ? 'page' : undefined} scroll={false}>{l}</Link>
 
@@ -29,19 +34,23 @@ export default async function Caja({ searchParams }: { searchParams: Promise<{ m
     <>
       <Head eyebrow="Plata" title="Caja" />
 
-      <div className="grid" style={{ ['--min' as string]: '160px' }}>
-        <Kpi label="Ingresos" value={$(tot.ing)} className="in" sub="ventas − comisiones" />
-        <Kpi label="Gastos" value={$(tot.gas)} className="out" />
-        <Kpi label="Retirado" value={$(retirado)} className="out" />
-        <Kpi label="En caja" value={$(total)} sub="ingresos − gastos − retiros" dark />
+      <div className="grid" style={{ ['--min' as string]: '200px' }}>
+        <Kpi label="Ingresos" value={$(tot.ing)} icon={ICON.in} sub="ventas − comisiones" />
+        <Kpi label="Gastos" value={$(tot.gas)} icon={ICON.out} />
+        <Kpi label="Retirado" value={$(retirado)} icon={ICON.user} />
+        <Kpi label="En caja" value={$(total)} icon={ICON.wallet} sub="ingresos − gastos − retiros" dark />
       </div>
 
-      <section className="card">
-        <h2>Por medio de pago</h2>
-        <div className="grid" style={{ ['--min' as string]: '160px' }}>
-          {medios.map(r => <Kpi key={r.medio} label={r.medio} value={$(r.s)} className={Number(r.s) < 0 ? 'out' : ''} />)}
-        </div>
-      </section>
+      <div className="grid wide">
+        <section className="card">
+          <div className="row"><h2>Evolución del saldo{m ? ` · ${m}` : ''}</h2><span className="pill">{$(evolucion.at(-1)?.v ?? 0)}</span></div>
+          {evolucion.length > 1 ? <Trend data={evolucion} /> : <p className="muted">Faltan movimientos para graficar.</p>}
+        </section>
+        <section className="card">
+          <h2>Por medio de pago</h2>
+          <Donut data={medios.map(r => ({ k: r.medio, v: Number(r.s) }))} center={$(total)} label="en caja" />
+        </section>
+      </div>
 
       <div className="grid" style={{ ['--min' as string]: '280px' }}>
         <form action={save.bind(null, 'caja')} className="card">
@@ -72,8 +81,10 @@ export default async function Caja({ searchParams }: { searchParams: Promise<{ m
 
       <section className="card">
         <h2>Retiros por persona</h2>
-        <Grid head={['Persona', '#Retiros', '$Total']} rows={socios.map(r => [<strong key="p">{r.persona}</strong>, r.n, $(r.re)])} />
-        {!socios.length && <p className="muted">Todavía no hay retiros.</p>}
+        {socios.length ? <div className="grid" style={{ ['--min' as string]: '260px' }}>
+          <Donut data={socios.map(r => ({ k: r.persona, v: Number(r.re) }))} center={$(retirado)} label="retirado" />
+          <Grid head={['Persona', '#Retiros', '$Total']} rows={socios.map(r => [<strong key="p">{r.persona}</strong>, r.n, $(r.re)])} />
+        </div> : <p className="muted">Todavía no hay retiros.</p>}
       </section>
 
       <section className="card">

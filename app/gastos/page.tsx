@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { save } from '@/app/actions'
 import { sql, params, $, num, fecha } from '@/lib/db'
-import { Head, Sel, In, Del, Grid, Kpi } from '@/lib/ui'
+import { Head, Sel, In, Del, Grid, Kpi, ICON } from '@/lib/ui'
+import { Donut } from '@/lib/charts'
 
 export default async function Gastos({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
   const { edit } = await searchParams
@@ -12,6 +13,7 @@ export default async function Gastos({ searchParams }: { searchParams: Promise<{
     sql`select coalesce(pagador, '—') k, count(*) n, sum(monto) m from gastos group by 1 order by m desc`,
   ])
   const e = rows.find(r => String(r.id) === edit)
+  const total = rows.reduce((s, r) => s + Number(r.monto), 0)
 
   return (
     <>
@@ -35,14 +37,17 @@ export default async function Gastos({ searchParams }: { searchParams: Promise<{
       </form>
 
       <div className="grid" style={{ ['--min' as string]: '160px' }}>
-        <Kpi label="Total gastado" value={$(rows.reduce((s, r) => s + Number(r.monto), 0))} className="out" />
-        <Kpi label="Compras" value={String(rows.length)} />
-        <Kpi label="Insumos distintos" value={String(insumos.length)} />
+        <Kpi label="Total gastado" value={$(total)} icon={ICON.out} />
+        <Kpi label="Compras" value={String(rows.length)} icon={ICON.wallet} />
+        <Kpi label="Insumos distintos" value={String(insumos.length)} icon={ICON.box} />
       </div>
 
       <section className="card">
         <h2>Por quién pagó</h2>
-        <Grid head={['Pagó', '#Compras', '$Total']} rows={porPagador.map(r => [<strong key="k">{r.k}</strong>, r.n, $(r.m)])} />
+        <div className="grid" style={{ ['--min' as string]: '260px' }}>
+          {porPagador.length > 0 && <Donut data={porPagador.map(r => ({ k: r.k, v: Number(r.m) }))} center={$(total)} label="gastado" />}
+          <Grid head={['Pagó', '#Compras', '$Total']} rows={porPagador.map(r => [<strong key="k">{r.k}</strong>, r.n, $(r.m)])} />
+        </div>
       </section>
 
       <section className="card">

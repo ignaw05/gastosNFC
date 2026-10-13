@@ -1,93 +1,132 @@
+/* estética basada en Capitalio (watermelon.sh) */
 :root {
-  --bg: #F3F4F1; --ink: #16181A; --muted: #5B5F58; --line: #E2E4DE; --soft: #EDEEEA; --field: #D3D5CF;
-  --in: #1F4FD1; --out: #A3480A; --warn-bg: #FCEBDD; --warn: #8A3B06;
+  --bg: #F7F7F8; --panel: #fff; --ink: #1A1A1A; --muted: #7A7A7A; --line: #EBEBEB; --soft: #F5F5F5; --field: #E5E5E5;
+  --primary: oklch(0.613 0.212 256.33);
+  --c1: var(--primary); --c2: #7466F6; --c3: #FF7A00; --c4: #00B87C; --c5: #E10B05; --c6: #E7AD00;
+  --in: var(--primary); --out: #D9480F; --pos: #00B87C; --warn-bg: #FFF1E6; --warn: #A3480A;
+  --badge: conic-gradient(from 90deg, #5e5959 0%, #413f3f 6.25%, #242424 12.5%, #1d1b1b 28.481%, #2c2a2a 31.034%, #3b3838 33.588%, #585656 38.694%, #3e3c3c 46.951%, #242222 55.208%, #353232 62.885%, #464242 70.562%, #353333 76.351%, #242424 82.14%, #413f3f 91.07%, #5e5959 100%);
+  --inset: inset 4px 0 4px 0 rgb(0 0 0 / 1%);
 }
 * { box-sizing: border-box }
-body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-sans), system-ui, sans-serif; font-size: 14px }
-a { color: var(--ink) } a:hover { color: var(--in) }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-sans), system-ui, sans-serif; font-size: 14px; font-variant-numeric: tabular-nums }
+a { color: var(--ink) } a:hover { color: var(--primary) }
 
 .app { display: flex; min-height: 100vh }
-.side { width: 232px; flex-shrink: 0; background: var(--ink); color: #E9EAE6; padding: 28px 20px; display: flex; flex-direction: column; gap: 32px; position: sticky; top: 0; height: 100vh }
-.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px }
-.brand i { width: 32px; height: 32px; border-radius: 8px; background: var(--in); display: grid; place-items: center; font-style: normal; color: #fff; font-size: 14px }
-.side nav { display: flex; flex-direction: column; gap: 4px }
-.side nav a { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 10px; color: #B9BCB6; text-decoration: none; font-weight: 500 }
-.side nav a[aria-current] { background: #2A2D30; color: #fff; font-weight: 600 }
-main { flex: 1; min-width: 0; max-width: 1120px; padding: 36px 44px; display: flex; flex-direction: column; gap: 24px }
+.side { width: 250px; flex-shrink: 0; background: var(--panel); padding: 24px 16px; display: flex; flex-direction: column; gap: 24px; position: sticky; top: 0; height: 100vh; border-right: 1px solid var(--line) }
+.brand { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 18px }
+.brand i { width: 40px; height: 40px; border-radius: 8px; border: 1px solid var(--primary); background: linear-gradient(to top, color-mix(in oklab, var(--primary) 80%, black), var(--primary)); display: grid; place-items: center; font-style: normal; color: #fff; font-size: 16px; font-weight: 700 }
+.side-label { font-size: 14px; color: color-mix(in oklab, var(--muted) 70%, transparent); padding: 0 8px }
+.side nav { display: flex; flex-direction: column; gap: 6px }
+.side nav a { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 8px; color: var(--muted); text-decoration: none; font-size: 15px; position: relative }
+.side nav a:hover { color: var(--ink) }
+.side nav a[aria-current] { color: var(--ink); font-weight: 500; box-shadow: 0 0 5px 0 rgb(0 0 0 / 10%), inset 0 0 4px 2px rgb(0 0 0 / 3%) }
+main { flex: 1; min-width: 0; padding: 28px 32px 40px; display: flex; flex-direction: column; gap: 16px; background: var(--panel); box-shadow: var(--inset) }
+main > * { max-width: 1400px; width: 100% }
 
 .head > form { flex: 0 1 520px }
-.head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap }
-.eyebrow { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .08em }
-h1 { margin: 6px 0 0; font-size: 34px; font-weight: 800; letter-spacing: -.02em }
-h2 { margin: 0; font-size: 16px; font-weight: 700 }
-h3 { margin: 4px 0 0; font-size: 22px; font-weight: 800 }
+.head { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; padding-bottom: 8px }
+.eyebrow { font-size: 13px; color: var(--muted) }
+h1 { margin: 6px 0 0; font-size: 22px; font-weight: 600; letter-spacing: -.01em }
+h2 { margin: 0; font-size: 17px; font-weight: 500 }
+h3 { margin: 4px 0 0; font-size: 22px; font-weight: 700 }
 
-.card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 16px; min-width: 0 }
-.card.dark { background: var(--ink); color: #fff; border-color: var(--ink) }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 16px; min-width: 0; box-shadow: var(--inset) }
+.card.dark { background: linear-gradient(to top, color-mix(in oklab, var(--primary) 82%, black), var(--primary)); color: #fff; border-color: var(--primary) }
+.card.dark .badge { background: rgb(255 255 255 / 18%) }
 /* columnas automáticas: tantas como entren con un mínimo de --min; en celular queda 1 */
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(var(--min, 340px), 100%), 1fr)); gap: 16px }
-.kpi small { color: var(--muted); font-weight: 600; font-size: 13px }
-.dark small, .dark .muted { color: #C9CBC5 }
-.kpi b { display: block; font: 600 clamp(20px, 2.2vw, 28px) var(--font-mono), monospace; margin-top: 10px; overflow-wrap: anywhere }
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; background: var(--bg); border-radius: 12px; padding: 16px }
-.stats small { font-size: 12px; color: var(--muted); font-weight: 600 }
-.stats b { display: block; font: 600 18px var(--font-mono), monospace; margin-top: 4px; overflow-wrap: anywhere }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(var(--min, 340px), 100%), 1fr)); gap: 12px }
+.grid.wide { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) }
+.kpi { gap: 12px; min-height: 150px }
+.kpi .top { display: flex; justify-content: space-between; align-items: center; gap: 12px }
+.kpi small { color: var(--muted); font-size: 13px }
+.kpi .top small { font-size: 15px; color: inherit }
+.kpi b + small { display: block; margin-top: 6px }
+.dark small, .dark .muted { color: rgb(255 255 255 / 75%) }
+.kpi b { display: block; font-size: clamp(22px, 2.2vw, 30px); font-weight: 700; line-height: 1.1; overflow-wrap: anywhere }
+.badge { width: 32px; height: 32px; border-radius: 8px; background: var(--badge); box-shadow: 1px 1px 0 rgb(0 0 0 / 25%); display: grid; place-items: center; color: #fff; flex-shrink: 0 }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; background: var(--soft); border-radius: 8px; padding: 16px }
+.stats small { font-size: 13px; color: var(--muted) }
+.stats b { display: block; font-size: 20px; font-weight: 600; margin-top: 6px; overflow-wrap: anywhere }
 .row { display: flex; justify-content: space-between; align-items: center; gap: 8px 12px; flex-wrap: wrap }
 .inline-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin: 0 }
 .inline-form label { flex: 1 1 150px }
+.pill { padding: 4px 12px; border-radius: 8px; font-size: 13px; color: var(--c, var(--primary)); background: color-mix(in oklab, var(--c, var(--primary)) 10%, transparent) }
 
-.num { font-family: var(--font-mono), monospace; text-align: right; white-space: nowrap }
-.in { color: var(--in) } .out { color: var(--out) } .muted { color: var(--muted) }
+.num { text-align: right; white-space: nowrap }
+.in { color: var(--in) } .out { color: var(--out) } .pos { color: var(--pos) } .muted { color: var(--muted) }
 
 .scroll { overflow-x: auto }
-table { width: 100%; border-collapse: collapse }
-th { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; text-align: left; padding: 8px 10px; white-space: nowrap }
+table { width: 100%; border-collapse: separate; border-spacing: 0 }
+th { font-size: 13px; color: color-mix(in oklab, var(--ink) 80%, transparent); font-weight: 500; text-align: left; padding: 12px; white-space: nowrap; background: var(--soft); border-block: 1px solid var(--line) }
+th:first-child { border-left: 1px solid var(--line); border-radius: 8px 0 0 8px }
+th:last-child { border-right: 1px solid var(--line); border-radius: 0 8px 8px 0 }
 th.num { text-align: right }
-td { padding: 12px 10px; border-top: 1px solid var(--soft); vertical-align: middle; white-space: nowrap }
+td { padding: 12px; border-bottom: 1px solid var(--line); vertical-align: middle; white-space: nowrap }
+tr:last-child td { border-bottom: 0 }
 td form { margin: 0 }
 
 .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; align-items: end; margin: 0 }
 .fields .full { grid-column: 1 / -1 }
-label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 600; color: var(--muted) }
-input, select, textarea { font: inherit; font-size: 15px; color: var(--ink); min-height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--field); background: #fff; width: 100% }
-input[type=number] { font-family: var(--font-mono), monospace }
+label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: var(--muted) }
+input, select, textarea { font: inherit; font-size: 15px; color: var(--ink); min-height: 40px; padding: 0 12px; border-radius: 6px; border: 1px solid var(--field); background: var(--panel); width: 100%; box-shadow: 0 1px 2px rgb(0 0 0 / 4%) }
 textarea { padding: 10px 12px; min-height: 64px; resize: vertical }
-input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--in); outline-offset: 2px }
-button, .btn { font: inherit; font-weight: 700; min-height: 44px; padding: 0 18px; border-radius: 10px; border: 0; background: var(--in); color: #fff; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap }
-.btn:hover { color: #fff }
-.ghost { background: #fff; color: var(--ink); border: 1px solid var(--field); font-weight: 600 }
-.ghost:hover { color: var(--ink); border-color: var(--muted) }
-.dashed { border-style: dashed }
-.icon { width: 36px; min-height: 36px; padding: 0; background: transparent; color: var(--muted); border: 1px solid var(--line) }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px }
+button, .btn { font: inherit; font-weight: 500; min-height: 40px; padding: 0 16px; border-radius: 6px; border: 0; background: var(--primary); color: #fff; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap }
+.btn:hover { color: #fff; background: color-mix(in oklab, var(--primary) 90%, black) }
+.ghost, .ghost:hover { background: var(--soft); color: var(--ink); border: 0 }
+.ghost:hover { background: var(--line) }
+.dashed { border: 1px dashed var(--field) }
+.icon { width: 34px; min-height: 34px; padding: 0; background: transparent; color: var(--muted); border: 1px solid var(--line) }
+.icon:hover { color: var(--c5); border-color: var(--c5) }
 .actions { display: flex; gap: 8px; align-items: center; justify-content: flex-end }
 
 .chips { display: flex; flex-wrap: wrap; gap: 8px; border: 0; padding: 0; margin: 0; min-width: 0 }
-.chips legend { font-size: 12px; font-weight: 600; color: var(--muted); padding: 0; margin-bottom: 6px }
+.chips legend { font-size: 13px; font-weight: 500; color: var(--muted); padding: 0; margin-bottom: 6px }
 .chips label { display: block; position: relative }
 .chips input { position: absolute; opacity: 0; width: 1px; height: 1px; min-height: 0 }
-.chips span { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--field); background: #fff; color: var(--ink); font-weight: 600; font-size: 14px; cursor: pointer }
-.chips input:checked + span { background: var(--ink); color: #fff; border-color: var(--ink) }
-.chips input:focus-visible + span { outline: 2px solid var(--in); outline-offset: 2px }
+.chips span { display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--field); background: var(--panel); color: var(--muted); font-size: 14px; cursor: pointer }
+.chips input:checked + span { color: var(--ink); font-weight: 500; border-color: transparent; box-shadow: 0 0 5px 0 rgb(0 0 0 / 10%), inset 0 0 4px 2px rgb(0 0 0 / 3%) }
+.chips input:focus-visible + span { outline: 2px solid var(--primary); outline-offset: 2px }
 
-.bar { height: 8px; background: var(--soft); border-radius: 4px; margin-top: 8px }
-.bar div { height: 8px; background: var(--in); border-radius: 4px }
-.tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: var(--soft); font: 600 12px var(--font-mono), monospace }
-.tag.warn { background: var(--warn-bg); color: var(--warn); font-family: var(--font-sans), sans-serif }
+.bar { height: 8px; background: color-mix(in oklab, var(--ink) 7%, transparent); border-radius: 4px; margin-top: 8px; overflow: hidden }
+.bar div { height: 8px; background: var(--primary); border-radius: 4px; transform-origin: left; animation: grow .7s ease-out both }
+@keyframes grow { from { transform: scaleX(0) } }
+.tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px; background: var(--soft); font-size: 12px; font-weight: 500 }
+.tag.warn { background: var(--warn-bg); color: var(--warn) }
 .tag.sold { color: var(--muted); text-decoration: line-through }
 .tag button { min-height: 0; padding: 0 2px; background: none; color: inherit; font-weight: 700 }
 .tags { display: flex; flex-wrap: wrap; gap: 6px }
-.tabs { display: flex; gap: 6px }
-.tabs a { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--field); text-decoration: none; font-weight: 600; font-size: 13px }
-.tabs a[aria-current] { background: var(--ink); color: #fff; border-color: var(--ink) }
-details summary { cursor: pointer; font-weight: 600 }
+.tabs { display: flex; gap: 4px; padding: 3px; background: var(--soft); border-radius: 8px; overflow-x: auto; max-width: 100% }
+.tabs a { padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 13px; color: var(--muted); white-space: nowrap }
+.tabs a[aria-current] { background: var(--panel); color: var(--ink); font-weight: 500; box-shadow: 0 1px 3px rgb(0 0 0 / 10%) }
+details summary { cursor: pointer; font-weight: 500 }
 
+/* gráficos */
+.dots { background-image: radial-gradient(circle, color-mix(in oklab, var(--ink) 12%, transparent) 1px, transparent 1px); background-size: 24px 24px; border-radius: 6px }
+.tip { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 12px; display: grid; gap: 6px; box-shadow: 0 4px 12px rgb(0 0 0 / 8%); min-width: 160px }
+.tip i, .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 8px; vertical-align: -2px; flex-shrink: 0 }
+.legend-row { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 16px; font-size: 13px; color: var(--muted) }
+.legend-row i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -2px }
+.donut { display: flex; flex-direction: column; gap: 20px; flex: 1; justify-content: space-between }
+.donut-chart { position: relative; width: 100%; max-width: 220px; aspect-ratio: 1; margin: 0 auto }
+.donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; text-align: center }
+.donut-center b { font-size: 20px; font-weight: 600 }
+.donut-center span { color: var(--muted); font-size: 13px; margin-top: 4px }
+.legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px }
+.legend li { display: flex; align-items: center; gap: 4px; font-size: 14px }
+.legend span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: color-mix(in oklab, var(--ink) 80%, transparent) }
+.legend b { font-weight: 500 }
+.legend small { color: var(--muted); min-width: 40px; text-align: right }
+
+@media (max-width: 1000px) { .grid.wide { grid-template-columns: 1fr } }
 @media (max-width: 800px) {
   .app { flex-direction: column }
-  .side { width: auto; height: auto; position: static; padding: 12px 16px; gap: 12px }
-  .side nav { flex-direction: row; overflow-x: auto; scrollbar-width: none }
-  .side nav a { padding: 10px 12px; white-space: nowrap }
+  .side { width: auto; height: auto; position: static; padding: 12px 16px; gap: 12px; border-right: 0; border-bottom: 1px solid var(--line) }
+  .side-label { display: none }
+  .side nav { flex-direction: row; overflow-x: auto; scrollbar-width: none; padding: 4px }
+  .side nav a { padding: 8px 12px; white-space: nowrap }
   main { padding: 20px 16px }
-  h1 { font-size: 26px }
-  .card { padding: 16px }
-  .kpi b { font-size: 17px }
+  .card { padding: 14px }
+  .kpi { min-height: 0 }
+  .kpi b { font-size: 22px }
 }

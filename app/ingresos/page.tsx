@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { save } from '@/app/actions'
 import { sql, params, $, num, fecha } from '@/lib/db'
 import { Head, Sel, In, Del, Grid, Chips } from '@/lib/ui'
+import { Donut } from '@/lib/charts'
 
 const resumen = (by: string) => sql`
   select ${sql(by)} k, sum(unidades) u, sum(monto) m, sum(comision) c, sum(costo) co, sum(ganancia) g
@@ -26,6 +27,8 @@ export default async function Ingresos({ searchParams }: { searchParams: Promise
   const prodOpts: [string, string][] = prods.map(x => [JSON.stringify([x.tipo, x.nombre]), `${x.tipo} · ${x.nombre}`])
   const head = ['', '#Unidades', '$Monto', '$Comisión', '$Costo', '$Ganancia']
   const fmt = (rs: typeof porProd) => rs.map(r => [<strong key="k">{r.k ?? "—"}</strong>, num(r.u), $(r.m), $(r.c), $(r.co), <strong key="g">{$(r.g)}</strong>])
+
+  const dona = (rs: typeof porProd) => <Donut data={rs.map(r => ({ k: r.k ?? '—', v: Number(r.m) }))} center={$(rs.reduce((t, r) => t + Number(r.m), 0))} label="vendido" />
 
   return (
     <>
@@ -54,6 +57,12 @@ export default async function Ingresos({ searchParams }: { searchParams: Promise
             </div>
           : <p className="muted">Primero creá un producto en <Link href="/productos">Productos</Link>.</p>}
       </form>
+
+      {rows.length > 0 && <div className="grid" style={{ ['--min' as string]: '260px' }}>
+        <section className="card"><h2>Ventas por vendedor</h2>{dona(porVend)}</section>
+        <section className="card"><h2>Ventas por método de pago</h2>{dona(porMetodo)}</section>
+        <section className="card"><h2>Ventas por lugar</h2>{dona(porLugar)}</section>
+      </div>}
 
       <section className="card"><h2>Por producto</h2><Grid head={head} rows={fmt(porProd)} /></section>
       <div className="grid">
