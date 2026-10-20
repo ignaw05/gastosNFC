@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { sql, type Kind } from '@/lib/db'
 
 const COLS = {
-  gastos: ['tipo', 'nombre', 'unidades', 'fecha', 'monto', 'pagador', 'medio'],
+  gastos: ['tipo', 'nombre', 'unidades', 'fecha', 'monto', 'pagador'],
   ingresos: ['tipo', 'nombre', 'unidades', 'monto', 'fecha', 'metodo_pago', 'vendedor', 'comision', 'lugar'],
   productos: ['tipo', 'nombre'],
   producto_items: ['producto_id', 'gasto_tipo', 'gasto_nombre', 'cantidad'],
@@ -53,6 +53,14 @@ export async function del(table: Table, id: number) {
   revalidatePath('/', 'layout')
 }
 
+// rendición: devolver un gasto al socio que lo pagó, desde un medio de la caja. Sin medio = deshacer.
+export async function devolver(id: number, fd: FormData) {
+  const medio = String(fd.get('medio') ?? '').trim() || null
+  const f = String(fd.get('fecha') ?? '').trim() || new Date().toISOString().slice(0, 10)
+  await sql`update gastos set devuelto_medio = ${medio}, devuelto_fecha = ${medio && f} where id = ${id}`
+  revalidatePath('/', 'layout')
+}
+
 // Arma stock: un código por línea/coma; sin códigos usa la cantidad.
 export async function addStock(fd: FormData) {
   const producto_id = Number(fd.get('producto_id'))
@@ -69,7 +77,7 @@ const USES: Record<Kind, [string, string][]> = {
   gasto_nombre: [['gastos', 'nombre'], ['producto_items', 'gasto_nombre']],
   producto_tipo: [['productos', 'tipo'], ['ingresos', 'tipo']],
   producto_nombre: [['productos', 'nombre'], ['ingresos', 'nombre']],
-  metodo_pago: [['ingresos', 'metodo_pago'], ['gastos', 'medio'], ['caja', 'desde'], ['caja', 'hacia']],
+  metodo_pago: [['ingresos', 'metodo_pago'], ['gastos', 'medio'], ['gastos', 'devuelto_medio'], ['caja', 'desde'], ['caja', 'hacia']],
   vendedor: [['ingresos', 'vendedor']],
   pagador: [['gastos', 'pagador'], ['caja', 'persona']],
 }

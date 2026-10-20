@@ -1,25 +1,27 @@
 import Link from 'next/link'
 import { save } from '@/app/actions'
-import { sql, params, $, num, fecha } from '@/lib/db'
-import { Head, Sel, In, Del, Grid, Chips } from '@/lib/ui'
+import { sql, params, rango, $, num, fecha, type Rango } from '@/lib/db'
+import { Head, Sel, In, Del, Grid, Chips, Filtro } from '@/lib/ui'
 import { Donut } from '@/lib/charts'
 
-const resumen = (by: string) => sql`
+const resumen = (by: string, r: ReturnType<typeof rango>) => sql`
   select ${sql(by)} k, sum(unidades) u, sum(monto) m, sum(comision) c, sum(costo) co, sum(ganancia) g
-  from ingresos_ganancia group by 1 order by g desc`
+  from ingresos_ganancia where ${r.on('fecha')} group by 1 order by g desc`
 
-export default async function Ingresos({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
-  const { edit } = await searchParams
+export default async function Ingresos({ searchParams }: { searchParams: Promise<Rango & { edit?: string }> }) {
+  const sp = await searchParams
+  const { edit } = sp
+  const r = rango(sp), w = r.on('fecha')
   const [p, rows, prods, codigos, porProd, porVend, porMetodo, porLugar, lugares] = await Promise.all([
     params(),
-    sql`select * from ingresos_ganancia order by fecha desc, id desc`,
+    sql`select * from ingresos_ganancia where ${w} order by fecha desc, id desc`,
     sql`select tipo, nombre from productos order by tipo, nombre`,
     sql`select ingreso_id, string_agg(codigo, ' ' order by codigo) cs from unidades where ingreso_id is not null group by 1`,
     sql`select tipo || ' · ' || nombre k, sum(unidades) u, sum(monto) m, sum(comision) c, sum(costo) co, sum(ganancia) g
-        from ingresos_ganancia group by 1 order by g desc`,
-    resumen('vendedor'),
-    resumen('metodo_pago'),
-    resumen('lugar'),
+        from ingresos_ganancia where ${w} group by 1 order by g desc`,
+    resumen('vendedor', r),
+    resumen('metodo_pago', r),
+    resumen('lugar', r),
     sql`select distinct lugar from ingresos where lugar is not null order by 1`,
   ])
   const e = rows.find(r => String(r.id) === edit)
@@ -57,6 +59,8 @@ export default async function Ingresos({ searchParams }: { searchParams: Promise
             </div>
           : <p className="muted">Primero creá un producto en <Link href="/productos">Productos</Link>.</p>}
       </form>
+
+      <Filtro path="/ingresos" r={r} />
 
       {rows.length > 0 && <div className="grid" style={{ ['--min' as string]: '260px' }}>
         <section className="card"><h2>Ventas por vendedor</h2>{dona(porVend)}</section>

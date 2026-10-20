@@ -100,10 +100,18 @@ alter table caja add constraint caja_check check (
   (tipo = 'retiro' and desde is not null and hacia is null and persona is not null) or
   (tipo = 'aporte' and hacia is not null and desde is null and persona is not null));
 
+-- RENDICIÓN: cada gasto lo paga un socio (pagador) y queda como deuda hasta que se le devuelve desde un medio de la caja.
+alter table gastos add column if not exists devuelto_fecha date;
+alter table gastos add column if not exists devuelto_medio text;
+-- migración: gasto viejo sin socio pero con medio = pagado directo de la caja, ya está saldado
+update gastos set devuelto_medio = medio, devuelto_fecha = fecha where pagador is null and medio is not null and devuelto_medio is null;
+
 -- libro mayor: cada fila mueve `monto` (con signo) en un medio. saldo de un medio = sum(monto).
-create or replace view caja_mov as
+-- un gasto solo saca plata de la caja cuando se devuelve; mientras tanto es deuda con el socio.
+drop view if exists caja_mov;
+create view caja_mov as
   select fecha, 'ingreso' origen, id, metodo_pago medio, monto, tipo || ' · ' || nombre || coalesce(' · ' || lugar, '') detalle from ingresos
   union all select fecha, 'comision', id, metodo_pago, -comision, 'Comisión ' || vendedor from ingresos where comision > 0
-  union all select fecha, 'gasto', id, coalesce(medio, 'Sin medio'), -monto, tipo || ' · ' || nombre || coalesce(' · pagó ' || pagador, '') from gastos
+  union all select devuelto_fecha, 'devolucion', id, devuelto_medio, -monto, concat_ws(' · ', 'a ' || pagador, tipo || ' · ' || nombre) from gastos where devuelto_medio is not null
   union all select fecha, tipo, id, desde, -monto, concat_ws(' · ', '→ ' || hacia, persona, nota) from caja where desde is not null
   union all select fecha, tipo, id, hacia, monto, concat_ws(' · ', '← ' || desde, persona, nota) from caja where hacia is not null;

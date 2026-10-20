@@ -79,3 +79,16 @@ export function Grid({ head, rows }: { head: string[]; rows: React.ReactNode[][]
     </div>
   )
 }
+
+// filtro por mes o rango (form GET nativo); "Todo" limpia
+export function Filtro({ path, r }: { path: string; r: { mes?: string; desde?: string; hasta?: string; activo: boolean } }) {
+  return (
+    <form className="card inline-form" action={path}>
+      <label>Mes<input type="month" name="mes" defaultValue={r.mes} /></label>
+      <label>Desde<input type="date" name="desde" defaultValue={r.mes ? undefined : r.desde} /></label>
+      <label>Hasta<input type="date" name="hasta" defaultValue={r.mes ? undefined : r.hasta} /></label>
+      <button>Filtrar</button>
+      {r.activo && <a href={path} className="btn ghost">Todo</a>}
+    </form>
+  )
+}

@@ -27,12 +27,19 @@ assert.equal(Number(pr.costo).toFixed(4), (100 / 30 + 2 * 32 / 30).toFixed(4))
 const [ing] = await sql`select costo, ganancia from ingresos_ganancia`
 assert.equal(Number(ing.ganancia).toFixed(2), (50 - 5 - 3 * Number(pr.costo)).toFixed(2))
 
-// caja = ingresos − comisiones − gastos − retiros: venta 50 en Efectivo − comisión 5; gastos sin medio −132; transferir 20 a MP; retiros 10 de MP y 5 de Efectivo
+// rendición: Igna pagó todos los gastos (132); se le devuelve el Atril (100) desde Efectivo → se le deben 32.
+// venta 50 en Efectivo − comisión 5; transferir 20 a MP; retiros de ganancia 10 de MP y 5 de Efectivo
+await sql`update gastos set pagador = 'Igna'`
+await sql`update gastos set devuelto_medio = 'Efectivo', devuelto_fecha = now() where nombre = 'Atril'`
 await sql`insert into caja (tipo, fecha, desde, hacia, monto) values ('transferencia', now(), 'Efectivo', 'MP', 20)`
 await sql`insert into caja (tipo, fecha, desde, monto, persona) values ('retiro', now(), 'MP', 10, 'Socio')`
 await sql`insert into caja (tipo, fecha, desde, monto, persona) values ('retiro', now(), 'Efectivo', 5, 'Socio')`
 const saldo = Object.fromEntries((await sql`select medio, sum(monto) s from caja_mov group by 1`).map(r => [r.medio, Number(r.s)]))
-assert.deepEqual(saldo, { Efectivo: 20, MP: 10, 'Sin medio': -132 })
+assert.deepEqual(saldo, { Efectivo: -80, MP: 10 })
+const [{ deuda }] = await sql`select sum(monto) deuda from gastos where devuelto_medio is null`
+assert.equal(Number(deuda), 32)
+// en caja = ingresos − comisiones − gastos − retiros = plata en medios − deuda a socios
+assert.equal(50 - 5 - 132 - 15, -80 + 10 - Number(deuda))
 await assert.rejects(sql`insert into caja (tipo, fecha, desde, monto) values ('retiro', now(), 'MP', 10)`) // retiro sin persona
 
 await sql`drop schema check_tmp cascade`

@@ -24,3 +24,16 @@ const ars = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' 
 export const $ = (n: unknown) => ars.format(Number(n ?? 0))
 export const num = (n: unknown) => Number(Number(n ?? 0).toFixed(2)).toLocaleString('es-AR')
 export const fecha = (d: Date) => d.toISOString().slice(0, 10)
+
+// filtro de fechas (?mes=YYYY-MM o ?desde=&hasta=); on('fecha') arma el where. Sin filtro = todo.
+export type Rango = { mes?: string; desde?: string; hasta?: string }
+export function rango(sp: Rango) {
+  const ok = (v?: string) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : undefined)
+  let desde = ok(sp.desde), hasta = ok(sp.hasta)
+  if (sp.mes && /^\d{4}-\d{2}$/.test(sp.mes)) {
+    const [y, m] = sp.mes.split('-').map(Number)
+    desde = `${sp.mes}-01`; hasta = fecha(new Date(Date.UTC(y, m, 0)))
+  }
+  const on = (col: string) => sql`${sql(col)} between ${desde ?? '0001-01-01'} and ${hasta ?? '9999-12-31'}`
+  return { desde, hasta, mes: sp.mes, activo: !!(desde || hasta), on }
+}

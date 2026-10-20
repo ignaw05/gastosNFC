@@ -1,45 +1,66 @@
 import Link from 'next/link'
 import { save } from '@/app/actions'
-import { sql, params, $, fecha } from '@/lib/db'
-import { Head, Sel, In, Del, Grid, Kpi, ICON } from '@/lib/ui'
+import { sql, params, rango, $, fecha, type Rango } from '@/lib/db'
+import { Head, Sel, In, Del, Grid, Kpi, ICON, Filtro } from '@/lib/ui'
 import { Donut, Trend } from '@/lib/charts'
 
-const ORIGEN: Record<string, string> = { ingreso: 'Venta', comision: 'Comisión', gasto: 'Gasto', transferencia: 'Transferencia', retiro: 'Retiro', aporte: 'Aporte' }
+const ORIGEN: Record<string, string> = { ingreso: 'Venta', comision: 'Comisión', devolucion: 'Devolución gasto', transferencia: 'Transferencia', retiro: 'Retiro ganancia', aporte: 'Aporte' }
 
-export default async function Caja({ searchParams }: { searchParams: Promise<{ m?: string }> }) {
-  const { m } = await searchParams
-  const [p, saldos, socios, [tot], movs] = await Promise.all([
+export default async function Caja({ searchParams }: { searchParams: Promise<Rango & { m?: string }> }) {
+  const sp = await searchParams
+  const { m } = sp
+  const r = rango(sp)
+  const [p, saldos, [tot], retiros, deudas, movs] = await Promise.all([
     params(),
     sql`select medio, sum(monto) s from caja_mov group by 1 order by s desc`,
-    sql`select persona, sum(monto) re, count(*) n from caja where tipo = 'retiro' group by 1 order by re desc`,
     sql`select (select coalesce(sum(monto - comision), 0) from ingresos) ing, (select coalesce(sum(monto), 0) from gastos) gas`,
-    // saldo acumulado (del medio filtrado o del total) en orden cronológico
-    sql`select *, sum(monto) over (order by fecha, origen, id, monto rows unbounded preceding) saldo
-        from caja_mov where ${m ? sql`medio = ${m}` : sql`true`}
+    sql`select persona, sum(monto) s from caja where tipo = 'retiro' group by 1`,
+    sql`select pagador, sum(monto) s from gastos where devuelto_medio is null group by 1`,
+    // saldo acumulado (del medio filtrado o del total) en orden cronológico; el filtro de fechas va después para no cortar el saldo
+    sql`select * from (
+          select *, sum(monto) over (order by fecha, origen, id, monto rows unbounded preceding) saldo
+          from caja_mov where ${m ? sql`medio = ${m}` : sql`true`}) x
+        where ${r.on('fecha')}
         order by fecha desc, origen desc, id desc, monto desc`,
   ])
-  const total = saldos.reduce((s, r) => s + Number(r.s), 0)
-  const retirado = socios.reduce((s, r) => s + Number(r.re), 0)
-  // medios configurados sin movimientos también aparecen, en $0
-  const medios = [...saldos, ...p.metodo_pago.filter(x => !saldos.some(r => r.medio === x)).map(medio => ({ medio, s: 0 }))]
+  const by = (rs: typeof retiros, k: string) => Object.fromEntries(rs.map(x => [x[k] ?? '—', Number(x.s)])) as Record<string, number>
+  const ret = by(retiros, 'persona'), deu = by(deudas, 'pagador')
+  const ganancia = Number(tot.ing) - Number(tot.gas)
+  const retirado = Object.values(ret).reduce((s, v) => s + v, 0)
+  const deuda = Object.values(deu).reduce((s, v) => s + v, 0)
+  const enMedios = saldos.reduce((s, x) => s + Number(x.s), 0)
+  // ponytail: ganancia en partes iguales entre los socios cargados en Parámetros
+  const socios = [...new Set([...p.pagador, ...Object.keys(ret), ...Object.keys(deu)])]
+  const parte = p.pagador.length ? ganancia / p.pagador.length : 0
+  const medios = [...saldos, ...p.metodo_pago.filter(x => !saldos.some(s => s.medio === x)).map(medio => ({ medio, s: 0 }))]
   const hoy = fecha(new Date())
-  // saldo al cierre de cada día (movs viene de más nuevo a más viejo)
   const porDia = new Map<string, number>()
-  for (const r of movs) if (!porDia.has(fecha(r.fecha))) porDia.set(fecha(r.fecha), Number(r.saldo))
+  for (const x of movs) if (!porDia.has(fecha(x.fecha))) porDia.set(fecha(x.fecha), Number(x.saldo))
   const evolucion = [...porDia].reverse().map(([k, v]) => ({ k, v }))
+  const qs = (v?: string) => new URLSearchParams(Object.entries({ m: v, mes: sp.mes, desde: sp.desde, hasta: sp.hasta }).filter(([, x]) => x) as [string, string][]).toString()
   const tab = (v: string | undefined, l: string) =>
-    <Link key={l} href={v ? `/caja?m=${encodeURIComponent(v)}` : '/caja'} aria-current={m === v ? 'page' : undefined} scroll={false}>{l}</Link>
+    <Link key={l} href={`/caja?${qs(v)}`} aria-current={m === v ? 'page' : undefined} scroll={false}>{l}</Link>
 
   return (
     <>
       <Head eyebrow="Plata" title="Caja" />
 
       <div className="grid" style={{ ['--min' as string]: '200px' }}>
-        <Kpi label="Ingresos" value={$(tot.ing)} icon={ICON.in} sub="ventas − comisiones" />
-        <Kpi label="Gastos" value={$(tot.gas)} icon={ICON.out} />
+        <Kpi label="Ganancia" value={$(ganancia)} icon={ICON.trend} sub="ingresos − comisiones − gastos" />
         <Kpi label="Retirado" value={$(retirado)} icon={ICON.user} />
-        <Kpi label="En caja" value={$(total)} icon={ICON.wallet} sub="ingresos − gastos − retiros" dark />
+        <Kpi label="Se debe a socios" value={$(deuda)} icon={ICON.out} sub="gastos sin devolver" />
+        <Kpi label="En caja" value={$(ganancia - retirado)} icon={ICON.wallet} sub={`en medios ${$(enMedios)} − deuda ${$(deuda)}`} dark />
       </div>
+
+      <section className="card">
+        <h2>Socios</h2>
+        <Grid head={['Socio', '$Ganancia (parte)', '$Retirado', '$Puede retirar', '$Gastos a devolverle', '$Total a cobrar']}
+          rows={socios.map(s => {
+            const mia = p.pagador.includes(s) ? parte : 0, disp = mia - (ret[s] ?? 0)
+            return [<strong key="s">{s}</strong>, $(mia), $(ret[s] ?? 0), $(disp), $(deu[s] ?? 0), <strong key="t">{$(disp + (deu[s] ?? 0))}</strong>]
+          })} />
+        <p className="muted">Los gastos se devuelven desde <Link href="/gastos">Gastos</Link>; acá se retira ganancia.</p>
+      </section>
 
       <div className="grid wide">
         <section className="card">
@@ -47,12 +68,24 @@ export default async function Caja({ searchParams }: { searchParams: Promise<{ m
           {evolucion.length > 1 ? <Trend data={evolucion} /> : <p className="muted">Faltan movimientos para graficar.</p>}
         </section>
         <section className="card">
-          <h2>Por medio de pago</h2>
-          <Donut data={medios.map(r => ({ k: r.medio, v: Number(r.s) }))} center={$(total)} label="en caja" />
+          <h2>Plata por medio</h2>
+          <Donut data={medios.map(x => ({ k: x.medio, v: Number(x.s) }))} center={$(enMedios)} label="en medios" />
         </section>
       </div>
 
       <div className="grid" style={{ ['--min' as string]: '280px' }}>
+        <form action={save.bind(null, 'caja')} className="card">
+          <h2>Retirar ganancia</h2>
+          <div className="fields">
+            <input type="hidden" name="tipo" value="retiro" />
+            <Sel label="Quién retira" name="persona" opts={p.pagador} />
+            <Sel label="De qué medio" name="desde" opts={p.metodo_pago} />
+            <In label="Monto" name="monto" type="number" step="0.01" min="0.01" />
+            <In label="Fecha" name="fecha" type="date" defaultValue={hoy} />
+            <In label="Nota" name="nota" required={false} className="full" />
+            <div className="actions" style={{ justifyContent: 'flex-start' }}><button>Retirar</button></div>
+          </div>
+        </form>
         <form action={save.bind(null, 'caja')} className="card">
           <h2>Transferir entre medios</h2>
           <input type="hidden" name="tipo" value="transferencia" />
@@ -65,38 +98,20 @@ export default async function Caja({ searchParams }: { searchParams: Promise<{ m
             <div className="actions" style={{ justifyContent: 'flex-start' }}><button>Transferir</button></div>
           </div>
         </form>
-        <form action={save.bind(null, 'caja')} className="card">
-          <h2>Retirar plata</h2>
-          <div className="fields">
-            <input type="hidden" name="tipo" value="retiro" />
-            <Sel label="Quién retira" name="persona" opts={p.pagador} />
-            <Sel label="De qué medio" name="desde" opts={p.metodo_pago} />
-            <In label="Monto" name="monto" type="number" step="0.01" min="0.01" />
-            <In label="Fecha" name="fecha" type="date" defaultValue={hoy} />
-            <In label="Nota" name="nota" required={false} className="full" placeholder="Ej: cubrir costos, ganancia" />
-            <div className="actions" style={{ justifyContent: 'flex-start' }}><button>Retirar</button></div>
-          </div>
-        </form>
       </div>
 
-      <section className="card">
-        <h2>Retiros por persona</h2>
-        {socios.length ? <div className="grid" style={{ ['--min' as string]: '260px' }}>
-          <Donut data={socios.map(r => ({ k: r.persona, v: Number(r.re) }))} center={$(retirado)} label="retirado" />
-          <Grid head={['Persona', '#Retiros', '$Total']} rows={socios.map(r => [<strong key="p">{r.persona}</strong>, r.n, $(r.re)])} />
-        </div> : <p className="muted">Todavía no hay retiros.</p>}
-      </section>
+      <Filtro path="/caja" r={r} />
 
       <section className="card">
         <div className="row"><h2>Historial</h2>
-          <nav className="tabs">{[tab(undefined, 'Todo'), ...medios.map(r => tab(r.medio, r.medio))]}</nav>
+          <nav className="tabs">{[tab(undefined, 'Todo'), ...medios.map(x => tab(x.medio, x.medio))]}</nav>
         </div>
         <Grid head={['Fecha', 'Movimiento', 'Detalle', ...(m ? [] : ['Medio']), '$Monto', '$Saldo', '']}
-          rows={movs.map(r => [<span key="f" className="num muted">{fecha(r.fecha)}</span>,
-            <strong key="o">{ORIGEN[r.origen]}</strong>, <span key="d" className="muted">{r.detalle}</span>, ...(m ? [] : [r.medio]),
-            <strong key="m" className={Number(r.monto) < 0 ? 'out' : 'in'}>{Number(r.monto) < 0 ? '− ' : '+ '}{$(Math.abs(r.monto))}</strong>,
-            $(r.saldo),
-            ['transferencia', 'retiro', 'aporte'].includes(r.origen) ? <Del key="x" table="caja" id={r.id} /> : null])} />
+          rows={movs.map(x => [<span key="f" className="num muted">{fecha(x.fecha)}</span>,
+            <strong key="o">{ORIGEN[x.origen]}</strong>, <span key="d" className="muted">{x.detalle}</span>, ...(m ? [] : [x.medio]),
+            <strong key="m" className={Number(x.monto) < 0 ? 'out' : 'in'}>{Number(x.monto) < 0 ? '− ' : '+ '}{$(Math.abs(x.monto))}</strong>,
+            $(x.saldo),
+            ['transferencia', 'retiro', 'aporte'].includes(x.origen) ? <Del key="x" table="caja" id={x.id} /> : null])} />
       </section>
     </>
   )
